@@ -7,6 +7,10 @@ private struct X: Codable, Hashable {
     let c: Int
 }
 
+private struct DictWrapper: Codable, Hashable {
+    let inner: [String: Int]
+}
+
 @available(macOS 13.0, *)
 final class OrderedPlistEncoderTests: XCTestCase {
     func testRoundtrips() throws {
@@ -30,6 +34,14 @@ final class OrderedPlistEncoderTests: XCTestCase {
     func testKeyOrder() throws {
         let encoder = OrderedPlistEncoder()
         XCTAssertEqual(stripPrologue(try encoder.encodeToString(X(b: "a", a: -1, c: 0))), wrapInPlist("<dict><key>b</key><string>a</string><key>a</key><integer>-1</integer><key>c</key><integer>0</integer></dict>"))
+    }
+
+    func testDictKeyOrder() throws {
+        let encoder = OrderedPlistEncoder()
+        let obj = DictWrapper(inner: ["c": 1, "a": 1, "b": 1])
+        let enc = stripPrologue(try encoder.encodeToString(obj))
+        let exp = wrapInPlist("<dict><key>inner</key><dict><key>a</key><integer>1</integer><key>b</key><integer>1</integer><key>c</key><integer>1</integer></dict></dict>")
+        XCTAssertEqual(exp, enc)
     }
 
     private func assertRoundtrips<Value>(_ value: Value, line: UInt = #line) throws where Value: Codable & Equatable {

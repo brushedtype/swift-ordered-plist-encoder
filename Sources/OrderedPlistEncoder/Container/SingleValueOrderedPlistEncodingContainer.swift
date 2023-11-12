@@ -85,7 +85,33 @@ struct SingleValueOrderedPlistEncodingContainer: SingleValueEncodingContainer {
     }
 
     mutating func encode<T>(_ value: T) throws where T: Encodable {
-        let encoder = OrderedPlistEncoderImpl(element: element, codingPath: codingPath)
-        try value.encode(to: encoder)
+        if let dict = value as? [Int: any Encodable] {
+            element.name = "dict"
+
+            for (key, value) in dict.sorted(using: KeyPathComparator(\.key)) {
+                let childElement: XMLElement = .init()
+                element.addChild(XMLElement(name: "key", stringValue: String(key)))
+                element.addChild(childElement)
+
+                let encoder = OrderedPlistEncoderImpl(element: childElement, codingPath: codingPath)
+                try value.encode(to: encoder)
+            }
+
+        } else if let dict = value as? [String: any Encodable] {
+            element.name = "dict"
+
+            for (key, value) in dict.sorted(using: KeyPathComparator(\.key)) {
+                let childElement: XMLElement = .init()
+                element.addChild(XMLElement(name: "key", stringValue: key))
+                element.addChild(childElement)
+
+                let encoder = OrderedPlistEncoderImpl(element: childElement, codingPath: codingPath)
+                try value.encode(to: encoder)
+            }
+
+        } else {
+            let encoder = OrderedPlistEncoderImpl(element: element, codingPath: codingPath)
+            try value.encode(to: encoder)
+        }
     }
 }
